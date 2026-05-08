@@ -1,124 +1,96 @@
-// document.addEventListener("DOMContentLoaded", function() {
-//     const slides = document.querySelectorAll(".step__item-adaptiv-slide");
-//     const prevButton = document.querySelector(".prev");
-//     const nextButton = document.querySelector(".next");
-//     const pagination = document.querySelectorAll(".pagination span");
+document.addEventListener("DOMContentLoaded", function () {
+    const stages = document.querySelector(".stages");
+    const list = document.querySelector(".stages__list");
+    const slides = Array.from(document.querySelectorAll(".stages__group"));
+    const prevButton = document.querySelector(".stages__control--prev");
+    const nextButton = document.querySelector(".stages__control--next");
+    const pagination = document.querySelector(".stages__pagination");
 
-//     let currentSlide = 0;
-
-//     // Показать текущий слайд
-//     const showSlide = (index) => {
-//         slides.forEach((slide, i) => {
-//             slide.style.display = i === index ? "block" : "none";
-//         });
-//     };
-
-//     // Обновить активную точку пагинации
-//     const updatePagination = (index) => {
-//         pagination.forEach((dot, i) => {
-//             dot.classList.toggle("active", i === index);
-//         });
-//     };
-
-//     // Показать первый слайд
-//     showSlide(currentSlide);
-//     updatePagination(currentSlide);
-
-//     // Обработчик клика на кнопку "prev"
-//     prevButton.addEventListener("click", () => {
-//         currentSlide = (currentSlide - 1 + slides.length) % slides.length;
-//         showSlide(currentSlide);
-//         updatePagination(currentSlide);
-//     });
-
-//     // Обработчик клика на кнопку "next"
-//     nextButton.addEventListener("click", () => {
-//         currentSlide = (currentSlide + 1) % slides.length;
-//         showSlide(currentSlide);
-//         updatePagination(currentSlide);
-//     });
-
-//     // Обработчик клика на точки пагинации
-//     pagination.forEach((dot, index) => {
-//         dot.addEventListener("click", () => {
-//             currentSlide = index;
-//             showSlide(currentSlide);
-//             updatePagination(currentSlide);
-//         });
-//     });
-// });
-
-document.addEventListener("DOMContentLoaded", function() {
-    const slides = document.querySelectorAll('.step__item-adaptiv-slide');
-    const prevButton = document.querySelector('.step__items-adaptiv-nav .prev');
-    const nextButton = document.querySelector('.step__items-adaptiv-nav .next');
-    const pagination = document.querySelectorAll('.step__items-adaptiv-nav .pagination span');
+    if (!list || !slides.length || !prevButton || !nextButton || !pagination) {
+        return;
+    }
 
     let currentSlide = 0;
 
-    function showSlide(index) {
-        slides.forEach((slide, i) => {
-            if (i === index) {
-                slide.style.display = 'flex';
-            } else {
-                slide.style.display = 'none';
-            }
+    slides.forEach(function (_, index) {
+        const dot = document.createElement("button");
+        dot.className = "stages__dot";
+        dot.type = "button";
+        dot.setAttribute("aria-label", "Показать этап " + (index + 1));
+        dot.addEventListener("click", function () {
+            goToSlide(index);
+        });
+        pagination.appendChild(dot);
+    });
+
+    const dots = Array.from(pagination.querySelectorAll(".stages__dot"));
+
+    function isMobileSlider() {
+        return window.matchMedia("(max-width: 992px)").matches;
+    }
+
+    function updateControls() {
+        prevButton.classList.toggle("is-disabled", currentSlide === 0);
+        nextButton.classList.toggle("is-disabled", currentSlide === slides.length - 1);
+        prevButton.disabled = currentSlide === 0;
+        nextButton.disabled = currentSlide === slides.length - 1;
+
+        dots.forEach(function (dot, index) {
+            dot.classList.toggle("is-active", index === currentSlide);
         });
     }
 
-    function updatePagination(index) {
-        pagination.forEach((dot, i) => {
-            if (i === index) {
-                dot.classList.add('active');
-            } else {
-                dot.classList.remove('active');
-            }
-        });
-    }
-
-    function updateButtons() {
-        if (currentSlide === 0) {
-            prevButton.classList.add('disabled');
+    function renderSlide() {
+        if (isMobileSlider()) {
+            list.style.transform = "translateX(" + currentSlide * -100 + "%)";
         } else {
-            prevButton.classList.remove('disabled');
+            list.style.transform = "";
         }
 
-        if (currentSlide === slides.length - 1) {
-            nextButton.classList.add('disabled');
-        } else {
-            nextButton.classList.remove('disabled');
-        }
+        updateControls();
     }
 
     function goToSlide(index) {
-        if (index >= 0 && index < slides.length) {
-            currentSlide = index;
-            showSlide(currentSlide);
-            updatePagination(currentSlide);
-            updateButtons();
+        if (index < 0 || index >= slides.length) {
+            return;
+        }
+
+        currentSlide = index;
+        renderSlide();
+    }
+
+    prevButton.addEventListener("click", function () {
+        goToSlide(currentSlide - 1);
+    });
+
+    nextButton.addEventListener("click", function () {
+        goToSlide(currentSlide + 1);
+    });
+
+    window.addEventListener("resize", renderSlide);
+
+    function revealPlaneOnCenter() {
+        if (!stages || stages.classList.contains("is-visible")) {
+            return;
+        }
+
+        const rect = stages.getBoundingClientRect();
+        const blockCenter = rect.top + rect.height / 2;
+        const screenCenter = window.innerHeight / 2;
+        const centerOffset = Math.abs(blockCenter - screenCenter);
+
+        if (centerOffset <= rect.height * 0.18) {
+            stages.classList.add("is-visible");
+            window.removeEventListener("scroll", revealPlaneOnCenter);
+            window.removeEventListener("resize", revealPlaneOnCenter);
         }
     }
 
-    prevButton.addEventListener('click', () => {
-        if (!prevButton.classList.contains('disabled')) {
-            goToSlide(currentSlide - 1);
-        }
-    });
+    if (stages) {
+        window.addEventListener("scroll", revealPlaneOnCenter, { passive: true });
+        window.addEventListener("resize", revealPlaneOnCenter);
+        revealPlaneOnCenter();
+    }
 
-    nextButton.addEventListener('click', () => {
-        if (!nextButton.classList.contains('disabled')) {
-            goToSlide(currentSlide + 1);
-        }
-    });
-
-    pagination.forEach((dot, index) => {
-        dot.addEventListener('click', () => {
-            goToSlide(index);
-        });
-    });
-
-    // Начальная инициализация
-    showSlide(currentSlide);
-    updatePagination(currentSlide);
-    updateButtons();
+    renderSlide();
 });
